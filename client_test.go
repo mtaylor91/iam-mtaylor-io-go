@@ -26,7 +26,13 @@ func TestSession(t *testing.T) {
 		t.Fatal("MTAYLOR_IO_SECRET_KEY not set")
 	}
 
-	_, err = client.Login(userEmail, userSecretKey)
+	session, err := client.Login(userEmail, userSecretKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = client.Refresh(
+		userEmail, userSecretKey, session.Id, session.Token)
 	if err != nil {
 		t.Fatal(err)
 	}

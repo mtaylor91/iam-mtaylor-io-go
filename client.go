@@ -240,3 +240,63 @@ func (c *Client) Logout() error {
 	// Return success
 	return nil
 }
+
+// Refresh refreshes the session
+func (c *Client) Refresh(
+	userId, secretKeyBase64, sessionId, sessionToken string,
+) (*LocalSession, error) {
+	var secretKey ed25519.PrivateKey
+	var err error
+
+	// Decode the secret key
+	secretKeyBytes, err := base64.StdEncoding.DecodeString(secretKeyBase64)
+	if err != nil {
+		return nil, err
+	}
+	secretKey = ed25519.PrivateKey(secretKeyBytes)
+
+	// Create the user identity
+	c.userIdentity = &UserIdentity{
+		userId:    userId,
+		publicKey: secretKey.Public().(ed25519.PublicKey),
+		secretKey: secretKey,
+	}
+
+	// Create the request
+	refreshUrl := c.buildURL("/user/sessions/"+sessionId+"/refresh", "")
+	req, err := http.NewRequest("POST", refreshUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sign the request
+	err = c.signRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the request
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	// Decode the response
+	var localSession LocalSession
+	err = json.NewDecoder(resp.Body).Decode(&localSession)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the local session
+	localSession.Token = sessionToken
+	c.localSession = &localSession
+
+	// Return success
+	return &localSession, nil
+}
