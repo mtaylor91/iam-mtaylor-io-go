@@ -3,6 +3,8 @@ package iam
 import (
 	"os"
 	"testing"
+
+	assert "github.com/stretchr/testify/require"
 )
 
 func TestSession(t *testing.T) {
@@ -36,6 +38,20 @@ func TestSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	authResp, err := client.Authorize(userEmail, "Write", "/users", client.host)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, authResp.Effect, "Allow")
+
+	authResp, err = client.Authorize(userEmail, "Read", "/users", "example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, authResp.Effect, "Deny")
 
 	err = client.Logout()
 	if err != nil {
