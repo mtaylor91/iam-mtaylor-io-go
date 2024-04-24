@@ -7,7 +7,7 @@ import (
 	assert "github.com/stretchr/testify/require"
 )
 
-func TestSession(t *testing.T) {
+func TestClient(t *testing.T) {
 	iamURL, ok := os.LookupEnv("MTAYLOR_IO_URL")
 	if !ok {
 		iamURL = "https://iam.mtaylor.io"
@@ -39,14 +39,24 @@ func TestSession(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	authResp, err := client.Authorize(userEmail, "Write", "/users", client.host)
+	authResp, err := client.Authorize(&AuthorizationRequest{
+		User:     userEmail,
+		Action:   "Write",
+		Resource: "/users",
+		Host:     client.host,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, authResp.Effect, "Allow")
 
-	authResp, err = client.Authorize(userEmail, "Read", "/users", "example.com")
+	authResp, err = client.Authorize(&AuthorizationRequest{
+		User:     userEmail,
+		Action:   "Read",
+		Resource: "/users",
+		Host:     "example.com",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
